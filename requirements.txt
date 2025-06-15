@@ -1,0 +1,16 @@
+
+torch
+torchvision
+torchaudio
+numpy
+pandas
+matplotlib
+scikit-learn
+jupyter
+tqdm
+Pillow
+opencv-python
+seaborn
+folium
+optuna
+tensorboard
