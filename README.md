@@ -17,7 +17,7 @@ El enfoque **multimodal (CNN + MLP)** mejora la predicción frente a modelos uni
 
 ## 🗂️ Dataset
 
-- **Fuente:** Plataforma Artgonuts  
+- **Fuente:** Plataforma Artgonuts.   
 - **POIs:** 1 569 puntos de interés con imagen principal y metadatos  
 - **Variable objetivo:** `engagement_level` (0=bajo, 1=medio, 2=alto)
 
@@ -95,16 +95,19 @@ El enfoque **multimodal (CNN + MLP)** mejora la predicción frente a modelos uni
 
 ```bash
 pip install -r requirements.txt
+```
 
 3. [📓 Abrir notebook](https://github.com/Leticia2512/Practica_Deep_Learning/blob/main/Notebooks/Practica_Deep_Learning.ipynb)
 
 4. Cargar modelo para inferencia:
 
+```bash
 from models import POIMultimodalModel
 
 model = POIMultimodalModel(...)
 model.load_state_dict(torch.load("models/best_model_final.pth", map_location="cpu"))
 model.eval()
+```
 
 
 
