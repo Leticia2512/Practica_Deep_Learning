@@ -1,141 +1,110 @@
 # Predicción de Engagement en Puntos de Interés Turísticos (POIs)
 
-Módulo Deep Learning - Bootcamp KeepCoding
+**Módulo Deep Learning - Bootcamp KeepCoding**
 
 ---
 
 ## 📝 Descripción
 
-Proyecto de *Deep Learning* para predecir el **nivel de engagement (bajo/medio/alto)** de puntos de interés turísticos (POIs) combinando:
+Proyecto de *Deep Learning* para predecir el **nivel de engagement (bajo/medio/alto)** de POIs combinando:
 
-- **Imágenes**: características visuales extraídas con ResNet-18.
-- **Metadatos**: coordenadas, categorías, etiquetas, popularidad, métricas de gamificación y engagement.
+- **Imágenes:** características visuales extraídas con ResNet-18.  
+- **Metadatos:** coordenadas, categorías, etiquetas, popularidad y métricas de engagement.
 
-El enfoque **multimodal** (CNN + MLP) mejora la predicción frente a modelos unidimensionales.
-
+El enfoque **multimodal (CNN + MLP)** mejora la predicción frente a modelos unidimensionales.
 
 ---
 
 ## 🗂️ Dataset
 
-- **Fuente:** Plataforma Artgonuts.
-- **POIs:** 1 569 puntos de interés con imagen principal (`main_image_path`) y metadatos asociados.
-- **Variable objetivo:** `engagement_level` (bajo=0, medio=1, alto=2) generada a partir de un *engagement_score* compuesto.
+- **Fuente:** Plataforma Artgonuts  
+- **POIs:** 1 569 puntos de interés con imagen principal y metadatos  
+- **Variable objetivo:** `engagement_level` (0=bajo, 1=medio, 2=alto)
 
 ---
 
 ## ⚙️ Reproducibilidad
 
-- Semillas fijadas para `random`, `numpy` y `torch`.
-- Dependencias en `requirements.txt`.
-- Entrenamiento y evaluación reproducibles con GPU si está disponible.
-- Modelo final guardado en `models/best_model_final.pth`.
+- Semillas fijadas para `random`, `numpy` y `torch`.  
+- Dependencias en [`requirements.txt`](requirements.txt)  
+- Entrenamiento y evaluación reproducibles en CPU/GPU  
+- Modelo final: `models/best_model_final.pth` 
 
 ---
 
-## 🔧 Preparación y Preprocesamiento
+## 🔧 Preprocesamiento
 
-- Eliminación de variables irrelevantes o que requerían NLP avanzado.
-
-- Transformación logarítmica y normalización de métricas de engagement.
-
-- Codificación multi-hot de categorías y selección de top-tags.
-
-- Estandarización de variables numéricas con StandardScaler.
-
-- Imágenes redimensionadas a 224×224, normalización ImageNet y data augmentation moderado (rotaciones, alteración de color).
-
+- Metadatos estandarizados y codificados  
+- Imágenes redimensionadas a 224×224, normalizadas y aumentadas moderadamente (rotación, color, crop)  
 
 ---
 
 ## 🏗️ Arquitectura del Modelo
 
-Modelo multimodal con dos ramas:
-
-- **Rama visual**: ResNet-18 preentrenada (ImageNet), capa final eliminada para extraer embeddings (512-D).
-
-- **Rama metadatos**: MLP de dos capas fully-connected con BatchNorm1d, activación ReLU/ELU y Dropout.
-
-- Fusión: Concatenación de ambas salidas → bloque adicional de clasificación con normalización y Dropout → salida de 3 clases.
-
+- **Rama visual:** ResNet-18 preentrenada (ImageNet), capa final eliminada para embeddings (512-D).  
+- **Rama metadatos:** MLP de dos capas con BatchNorm1d, activación y Dropout.  
+- **Fusión:** Concatenación de ambas ramas → MLP de clasificación → salida de 3 clases.
 
 ---
 
-## 🏗️ Entrenamiento y optimización
+## 🔧 Entrenamiento y Optimización
 
-- Batch size: 256.
-- **Pérdida:** CrossEntropyLoss con `class_weights` + `label_smoothing`.
-- **Optimizador:** AdamW con ReduceLROnPlateau + Early Stopping.
-- Fases:
+- **Batch size:** 256  
+- **Pérdida:** CrossEntropyLoss con `class_weights` + `label_smoothing`  
+- **Optimizador:** AdamW + ReduceLROnPlateau + Early Stopping  
 
-	1. Baseline (backbone congelado)
+**Fases de entrenamiento:**
 
-	2. Fine-tuning parcial con LR discriminativo
-
-	3. Optimización de hiperparámetros con Optuna (40 trials)
+| Fase               | Hiperparámetros relevantes                                                   | Mejor val_acc | Observaciones                                                         |
+| ------------------ | ---------------------------------------------------------------------------- | ------------- | -------------------------------------------------------------------- |
+| Baseline           | lr=1e-3, dropout=0.4, label_smoothing=0.05                                  | 86.36%        | Backbone congelado, aprende características desde la cabeza.         |
+| Fine-tuning        | lr_head=5e-4, lr_backbone=5e-5                                             | 90.91%        | Ajuste parcial del backbone mejora generalización.                   |
+| **Optuna (final)** | lr_head=9.52e-4, lr_backbone=1.19e-4, dropout=0.316, label_smoothing=0.04 | 93.94%        | Optimización sistemática, mejora significativa frente a fine-tuning. |
 
 ---
 
 ## 📊 Resultados
 
+### Rendimiento global
 
 | Fase               | Val. Accuracy | Test Accuracy | Macro-F1 (Test) |
 | ------------------ | ------------: | ------------: | --------------: |
-| Baseline           |        87.9 % |        84.5 % |           0.809 |
-| Fine-tuning        |        90.9 % |             — |               — |
-| **Optuna (final)** |    **93.4 %** |    **88.8 %** |       **0.875** |
+| Baseline           | 87.9 %        | 84.5 %        | 0.809           |
+| Fine-tuning        | 90.9 %        | —             | —               |
+| **Optuna (final)** | **93.4 %**    | **90.13 %**   | 0.8875          |
 
+### Métricas por clase
 
-| Clase     | Precisión | Recall |    F1 |
-| --------- | --------: | -----: | ----: |
-| 0 (bajo)  |     0.965 |  0.893 | 0.928 |
-| 1 (medio) |     0.887 |  0.810 | 0.847 |
-| 2 (alto)  |     0.761 |  0.962 | 0.850 |
+| Clase     | Precisión | Recall | F1-score |
+| --------- | --------: | -----: | -------: |
+| 0 (bajo)  | 0.974     | 0.910  | 0.941    |
+| 1 (medio) | 0.875     | 0.845  | 0.860    |
+| 2 (alto)  | 0.794     | 0.943  | 0.862    |
 
+**Insight visual:** Grad-CAM muestra que la rama visual se enfoca en rasgos distintivos de los POIs y permite analizar errores de predicción.
 
-Grad-CAM aplicado a la rama visual muestra que la red se enfoca en rasgos estéticos distintivos en las predicciones correctas.
-
----
-
-## 📝 Conclusiones y Propuesta futuras
-
-- El modelo multimodal mejora sustancialmente los enfoques unidimensionales (93.4 % val, 88.8 % test).
-
-- Técnicas clave: LR discriminativo, AdamW + ReduceLROnPlateau, label smoothing y búsqueda de hiperparámetros con Optuna.
-
-- Grad-CAM valida que la rama visual aprende patrones relevantes.
-
-Mejoras potenciales:
-
-- Augmentación dirigida para clases minoritarias.
-
-- Estrategias de freeze/unfreeze progresivas (One-Cycle LR, cosine annealing).
-
-- Técnicas de reweighting focal para mejorar recall minoritario.
-
-- Análisis de outliers con Grad-CAM para refinar etiquetado y arquitectura.
+**Conclusión:**  
+*El modelo multimodal permite predecir de manera precisa y confiable el engagement en POIs, facilitando mejoras futuras y aplicaciones en turismo y análisis de datos.*
 
 ---
 
 ## 🚀 Uso
 
-1. Clonar el repositorio.
+1. Clonar el repositorio  
 2. Instalar dependencias:
 
-   ```bash
-   pip install -r requirements.txt
+```bash
+pip install -r requirements.txt
 
-3. [👉 Abrir notebook](Practica_Deep_Learning.ipynb) para reproducir entrenamiento y evaluación.
+3. [📓 Abrir notebook](https://github.com/Leticia2512/Practica_Deep_Learning/blob/main/Notebooks/Practica_Deep_Learning.ipynb)
 
-4. Cargar models/best_model_final.pth para inferencia:
+4. Cargar modelo para inferencia:
+
+from models import POIMultimodalModel
 
 model = POIMultimodalModel(...)
-
-model.load_state_dict(torch.load("Models/best_model_final.pth", map_location="cpu"))
-
+model.load_state_dict(torch.load("models/best_model_final.pth", map_location="cpu"))
 model.eval()
-
-
 
 
 
